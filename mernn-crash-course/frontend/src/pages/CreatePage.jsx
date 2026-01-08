@@ -8,6 +8,7 @@ import {
 } from "@chakra-ui/react";
 import React from "react";
 import { useColorModeValue } from "@/components/ui/color-mode";
+import { useProductsStore } from "../store/product";
 
 const CreatePage = () => {
   const [newProduct, setNewProduct] = React.useState({
@@ -16,8 +17,12 @@ const CreatePage = () => {
     image: "",
   });
 
-  const handleAddProduct = () => {
-    console.log(newProduct);
+  const { createProduct } = useProductsStore();
+
+  const handleAddProduct = async () => {
+    const { success, message } = await createProduct(newProduct);
+    console.log("Success", success);
+    console.log("Message", message);
   };
 
   return (
