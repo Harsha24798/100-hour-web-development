@@ -3,6 +3,7 @@ import {
   Button,
   Container,
   DialogActionTrigger,
+  DialogBackdrop,
   DialogBody,
   DialogCloseTrigger,
   DialogContent,
@@ -30,8 +31,9 @@ import { FiEdit2, FiTrash2, FiCheck, FiX } from "react-icons/fi";
 const HomePage = () => {
   const { products, fetchProducts, deleteProduct, updateProduct } =
     useProductsStore();
-  const [editingId, setEditingId] = useState(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editedProduct, setEditedProduct] = useState({});
+  const [productToEdit, setProductToEdit] = useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -67,30 +69,38 @@ const HomePage = () => {
   };
 
   const handleEditClick = (product) => {
-    setEditingId(product._id);
+    setProductToEdit(product);
     setEditedProduct({
       name: product.name,
       price: product.price,
       image: product.image,
     });
+    setEditDialogOpen(true);
   };
 
-  const handleUpdateProduct = async (pid) => {
-    const { success, message } = await updateProduct(pid, editedProduct);
-    toaster.create({
-      title: success ? "Success" : "Error",
-      description: message,
-      type: success ? "success" : "error",
-      duration: 3000,
-    });
-    if (success) {
-      setEditingId(null);
-      setEditedProduct({});
+  const handleUpdateProduct = async () => {
+    if (productToEdit) {
+      const { success, message } = await updateProduct(
+        productToEdit._id,
+        editedProduct
+      );
+      toaster.create({
+        title: success ? "Success" : "Error",
+        description: message,
+        type: success ? "success" : "error",
+        duration: 3000,
+      });
+      if (success) {
+        setEditDialogOpen(false);
+        setProductToEdit(null);
+        setEditedProduct({});
+      }
     }
   };
 
   const handleCancelEdit = () => {
-    setEditingId(null);
+    setEditDialogOpen(false);
+    setProductToEdit(null);
     setEditedProduct({});
   };
 
@@ -129,93 +139,34 @@ const HomePage = () => {
               />
 
               <Box p={4}>
-                {editingId === product._id ? (
-                  <VStack spacing={3}>
-                    <Input
-                      placeholder="Product Name"
-                      value={editedProduct.name}
-                      onChange={(e) =>
-                        setEditedProduct({
-                          ...editedProduct,
-                          name: e.target.value,
-                        })
-                      }
-                    />
-                    <Input
-                      placeholder="Price"
-                      type="number"
-                      value={editedProduct.price}
-                      onChange={(e) =>
-                        setEditedProduct({
-                          ...editedProduct,
-                          price: e.target.value,
-                        })
-                      }
-                    />
-                    <Input
-                      placeholder="Image URL"
-                      value={editedProduct.image}
-                      onChange={(e) =>
-                        setEditedProduct({
-                          ...editedProduct,
-                          image: e.target.value,
-                        })
-                      }
-                    />
-                  </VStack>
-                ) : (
-                  <>
-                    <Heading as={"h3"} size={"md"} mb={2}>
-                      {product.name}
-                    </Heading>
+                <Heading as={"h3"} size={"md"} mb={2}>
+                  {product.name}
+                </Heading>
 
-                    <Text
-                      fontWeight={"bold"}
-                      fontSize={"xl"}
-                      color={textColor}
-                      mb={4}
-                    >
-                      ${product.price}
-                    </Text>
-                  </>
-                )}
+                <Text
+                  fontWeight={"bold"}
+                  fontSize={"xl"}
+                  color={textColor}
+                  mb={4}
+                >
+                  ${product.price}
+                </Text>
 
                 <HStack spacing={2} mt={3}>
-                  {editingId === product._id ? (
-                    <>
-                      <IconButton
-                        colorScheme="green"
-                        onClick={() => handleUpdateProduct(product._id)}
-                        size="sm"
-                      >
-                        <FiCheck />
-                      </IconButton>
-                      <IconButton
-                        colorScheme="gray"
-                        onClick={handleCancelEdit}
-                        size="sm"
-                      >
-                        <FiX />
-                      </IconButton>
-                    </>
-                  ) : (
-                    <>
-                      <IconButton
-                        colorScheme="blue"
-                        onClick={() => handleEditClick(product)}
-                        size="sm"
-                      >
-                        <FiEdit2 />
-                      </IconButton>
-                      <IconButton
-                        colorScheme="red"
-                        onClick={() => handleDeleteClick(product)}
-                        size="sm"
-                      >
-                        <FiTrash2 />
-                      </IconButton>
-                    </>
-                  )}
+                  <IconButton
+                    colorScheme="blue"
+                    onClick={() => handleEditClick(product)}
+                    size="sm"
+                  >
+                    <FiEdit2 />
+                  </IconButton>
+                  <IconButton
+                    colorScheme="red"
+                    onClick={() => handleDeleteClick(product)}
+                    size="sm"
+                  >
+                    <FiTrash2 />
+                  </IconButton>
                 </HStack>
               </Box>
             </Box>
@@ -255,7 +206,14 @@ const HomePage = () => {
         open={deleteDialogOpen}
         onOpenChange={(e) => setDeleteDialogOpen(e.open)}
       >
-        <DialogContent>
+        <DialogBackdrop bg="blackAlpha.600" />
+        <DialogContent
+          maxW="md"
+          position="fixed"
+          top="50%"
+          left="50%"
+          transform="translate(-50%, -50%)"
+        >
           <DialogHeader>
             <DialogTitle>Delete Product</DialogTitle>
             <DialogCloseTrigger />
@@ -268,12 +226,95 @@ const HomePage = () => {
           </DialogBody>
           <DialogFooter>
             <DialogActionTrigger asChild>
-              <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+              <Button
+                variant="outline"
+                onClick={() => setDeleteDialogOpen(false)}
+              >
                 Cancel
               </Button>
             </DialogActionTrigger>
             <Button colorScheme="red" onClick={handleDeleteConfirm}>
               Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </DialogRoot>
+
+      {/* Edit Product Dialog */}
+      <DialogRoot
+        open={editDialogOpen}
+        onOpenChange={(e) => setEditDialogOpen(e.open)}
+      >
+        <DialogBackdrop bg="blackAlpha.600" />
+        <DialogContent
+          maxW="md"
+          position="fixed"
+          top="50%"
+          left="50%"
+          transform="translate(-50%, -50%)"
+        >
+          <DialogHeader>
+            <DialogTitle>Edit Product</DialogTitle>
+            <DialogCloseTrigger />
+          </DialogHeader>
+          <DialogBody>
+            <VStack spacing={4}>
+              <Box w="full">
+                <Text mb={2} fontWeight="medium">
+                  Product Name
+                </Text>
+                <Input
+                  placeholder="Product Name"
+                  value={editedProduct.name}
+                  onChange={(e) =>
+                    setEditedProduct({
+                      ...editedProduct,
+                      name: e.target.value,
+                    })
+                  }
+                />
+              </Box>
+              <Box w="full">
+                <Text mb={2} fontWeight="medium">
+                  Price
+                </Text>
+                <Input
+                  placeholder="Price"
+                  type="number"
+                  value={editedProduct.price}
+                  onChange={(e) =>
+                    setEditedProduct({
+                      ...editedProduct,
+                      price: e.target.value,
+                    })
+                  }
+                />
+              </Box>
+              <Box w="full">
+                <Text mb={2} fontWeight="medium">
+                  Image URL
+                </Text>
+                <Input
+                  placeholder="Image URL"
+                  value={editedProduct.image}
+                  onChange={(e) =>
+                    setEditedProduct({
+                      ...editedProduct,
+                      image: e.target.value,
+                    })
+                  }
+                />
+              </Box>
+            </VStack>
+          </DialogBody>
+          <DialogFooter>
+            <DialogActionTrigger asChild>
+              <Button variant="outline" onClick={handleCancelEdit}>
+                Cancel
+              </Button>
+            </DialogActionTrigger>
+            <Button colorScheme="blue" onClick={handleUpdateProduct}>
+              Update Product
             </Button>
           </DialogFooter>
         </DialogContent>
