@@ -23,6 +23,10 @@ const productSchema = new mongoose.Schema(
   }
 );
 
+// Add indexes for better query performance
+productSchema.index({ createdAt: -1 });
+productSchema.index({ name: "text" }); // For text search
+
 const Product = mongoose.model("Product", productSchema);
 
 export default Product;

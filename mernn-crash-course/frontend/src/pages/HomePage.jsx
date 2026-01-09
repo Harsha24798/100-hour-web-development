@@ -23,13 +23,14 @@ import {
   VStack,
 } from "@chakra-ui/react";
 import React, { useEffect, useState } from "react";
+import { Link as RouterLink } from "react-router-dom";
 import { useColorModeValue } from "@/components/ui/color-mode";
 import { useProductsStore } from "../store/product";
 import { toaster } from "@/components/ui/toaster";
 import { FiEdit2, FiTrash2, FiCheck, FiX } from "react-icons/fi";
 
 const HomePage = () => {
-  const { products, fetchProducts, deleteProduct, updateProduct } =
+  const { products, pagination, fetchProducts, deleteProduct, updateProduct } =
     useProductsStore();
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editedProduct, setEditedProduct] = useState({});
@@ -37,17 +38,27 @@ const HomePage = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
   const bg = useColorModeValue("white", "gray.800");
   const textColor = useColorModeValue("gray.600", "gray.200");
 
   useEffect(() => {
     const loadProducts = async () => {
       setLoading(true);
-      await fetchProducts();
+      await fetchProducts(currentPage, 9); // 9 products per page (3x3 grid)
       setLoading(false);
     };
     loadProducts();
-  }, [fetchProducts]);
+  }, [currentPage, fetchProducts]);
+
+  const handlePageChange = (newPage) => {
+    // Prevent invalid page numbers
+    if (newPage < 1 || (pagination && newPage > pagination.pages)) {
+      return;
+    }
+    setCurrentPage(newPage);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   const handleDeleteClick = (product) => {
     setProductToDelete(product);
@@ -56,7 +67,9 @@ const HomePage = () => {
 
   const handleDeleteConfirm = async () => {
     if (productToDelete) {
-      const { success, message } = await deleteProduct(productToDelete._id);
+      const { success, message, shouldRefetch } = await deleteProduct(
+        productToDelete._id
+      );
       toaster.create({
         title: success ? "Success" : "Error",
         description: message,
@@ -65,6 +78,11 @@ const HomePage = () => {
       });
       setDeleteDialogOpen(false);
       setProductToDelete(null);
+
+      // Refetch to update pagination
+      if (shouldRefetch) {
+        await fetchProducts(currentPage, 9);
+      }
     }
   };
 
@@ -183,21 +201,73 @@ const HomePage = () => {
         )}
 
         {!loading && products.length === 0 && (
-          <Text
-            fontSize={"xl"}
-            textAlign={"center"}
-            fontWeight={"bold"}
-            color={"gray.500"}
-          >
-            No products found 😢{" "}
+          <VStack spacing={4}>
             <Text
-              as={"span"}
-              color={"blue.500"}
-              _hover={{ textDecoration: "underline" }}
+              fontSize={"xl"}
+              textAlign={"center"}
+              fontWeight={"bold"}
+              color={"gray.500"}
             >
-              Create a product
+              No products found 😢
             </Text>
-          </Text>
+            <Button as={RouterLink} to="/create" colorScheme="blue" size="lg">
+              Create a Product
+            </Button>
+          </VStack>
+        )}
+
+        {/* Pagination Controls */}
+        {!loading && pagination && pagination.total > 0 && (
+          <VStack spacing={3} mt={8}>
+            {pagination.pages > 1 && (
+              <HStack spacing={2}>
+                <Button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  opacity={currentPage === 1 ? 0.4 : 1}
+                  cursor={currentPage === 1 ? "not-allowed" : "pointer"}
+                  size="sm"
+                  colorScheme="blue"
+                  variant="outline"
+                >
+                  Previous
+                </Button>
+
+                {Array.from({ length: pagination.pages }, (_, i) => i + 1).map(
+                  (page) => (
+                    <Button
+                      key={page}
+                      onClick={() => handlePageChange(page)}
+                      colorScheme={currentPage === page ? "blue" : "gray"}
+                      variant={currentPage === page ? "solid" : "outline"}
+                      size="sm"
+                    >
+                      {page}
+                    </Button>
+                  )
+                )}
+
+                <Button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === pagination.pages}
+                  opacity={currentPage === pagination.pages ? 0.4 : 1}
+                  cursor={currentPage === pagination.pages ? "not-allowed" : "pointer"}
+                  size="sm"
+                  colorScheme="blue"
+                  variant="outline"
+                >
+                  Next
+                </Button>
+              </HStack>
+            )}
+
+            {/* Pagination Info */}
+            <Text fontSize="sm" color="gray.500">
+              Showing {products.length} of {pagination.total} products
+              {pagination.pages > 1 &&
+                ` (Page ${currentPage} of ${pagination.pages})`}
+            </Text>
+          </VStack>
         )}
       </VStack>
 

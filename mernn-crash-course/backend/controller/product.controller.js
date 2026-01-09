@@ -3,11 +3,31 @@ import mongoose from "mongoose";
 
 export const getAllProducts = async (req, res) => {
   try {
-    const products = await Product.find({});
+    // Add pagination
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
 
-    res.status(200).json({ success: true, data: products });
+    const products = await Product.find({})
+      .limit(limit)
+      .skip(skip)
+      .sort({ createdAt: -1 }); // Newest first
+
+    const total = await Product.countDocuments();
+
+    res.status(200).json({
+      success: true,
+      data: products,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit),
+      },
+    });
   } catch (error) {
-    res.status(500).json({ success: false, message: "Server Error" });
+    console.error("Error fetching products:", error);
+    res.status(500).json({ success: false, message: "Failed to fetch products" });
   }
 };
 
@@ -31,7 +51,10 @@ export const createProduct = async (req, res) => {
     return res.status(400).json({ success: false, message: "Invalid image URL" });
   }
 
-  const newProduct = new Product({ ...product, price });
+  // Sanitize product name (basic XSS prevention)
+  const sanitizedName = product.name.replace(/<[^>]*>/g, "").trim();
+
+  const newProduct = new Product({ ...product, name: sanitizedName, price });
 
   try {
     await newProduct.save();
@@ -84,6 +107,11 @@ export const updateProduct = async (req, res) => {
       return res.status(400).json({ success: false, message: "Price must be a positive number" });
     }
     updates.price = price;
+  }
+
+  // Sanitize name if provided
+  if (updates.name) {
+    updates.name = updates.name.replace(/<[^>]*>/g, "").trim();
   }
 
   // Validate image URL if provided
