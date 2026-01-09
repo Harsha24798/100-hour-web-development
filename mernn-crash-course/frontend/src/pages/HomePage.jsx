@@ -17,6 +17,7 @@ import {
   Image,
   Input,
   SimpleGrid,
+  Spinner,
   Text,
   VStack,
 } from "@chakra-ui/react";
@@ -33,11 +34,17 @@ const HomePage = () => {
   const [editedProduct, setEditedProduct] = useState({});
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState(null);
+  const [loading, setLoading] = useState(true);
   const bg = useColorModeValue("white", "gray.800");
   const textColor = useColorModeValue("gray.600", "gray.200");
 
   useEffect(() => {
-    fetchProducts();
+    const loadProducts = async () => {
+      setLoading(true);
+      await fetchProducts();
+      setLoading(false);
+    };
+    loadProducts();
   }, [fetchProducts]);
 
   const handleDeleteClick = (product) => {
@@ -215,7 +222,16 @@ const HomePage = () => {
           ))}
         </SimpleGrid>
 
-        {products.length === 0 && (
+        {loading && (
+          <VStack spacing={4}>
+            <Spinner size="xl" color="blue.500" thickness="4px" />
+            <Text fontSize="lg" color="gray.500">
+              Loading products...
+            </Text>
+          </VStack>
+        )}
+
+        {!loading && products.length === 0 && (
           <Text
             fontSize={"xl"}
             textAlign={"center"}
