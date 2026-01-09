@@ -1,4 +1,5 @@
 import Product from "../models/product.model.js";
+import mongoose from "mongoose";
 
 export const getAllProducts = async (req, res) => {
   try {
@@ -17,7 +18,20 @@ export const createProduct = async (req, res) => {
     return res.status(400).json({ success: false, message: "Please provide all product data" });
   }
 
-  const newProduct = new Product(product);
+  // Validate price is a positive number
+  const price = parseFloat(product.price);
+  if (isNaN(price) || price <= 0) {
+    return res.status(400).json({ success: false, message: "Price must be a positive number" });
+  }
+
+  // Validate image URL format
+  try {
+    new URL(product.image);
+  } catch (error) {
+    return res.status(400).json({ success: false, message: "Invalid image URL" });
+  }
+
+  const newProduct = new Product({ ...product, price });
 
   try {
     await newProduct.save();
@@ -31,6 +45,11 @@ export const createProduct = async (req, res) => {
 
 export const deleteProduct = async (req, res) => {
   const { id } = req.params;
+
+  // Validate MongoDB ObjectId
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ success: false, message: "Invalid product ID" });
+  }
 
   try {
     const deletedProduct = await Product.findByIdAndDelete(id);
@@ -53,9 +72,33 @@ export const updateProduct = async (req, res) => {
   const { id } = req.params;
   const updates = req.body;
 
+  // Validate MongoDB ObjectId
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ success: false, message: "Invalid product ID" });
+  }
+
+  // Validate price if provided
+  if (updates.price !== undefined) {
+    const price = parseFloat(updates.price);
+    if (isNaN(price) || price <= 0) {
+      return res.status(400).json({ success: false, message: "Price must be a positive number" });
+    }
+    updates.price = price;
+  }
+
+  // Validate image URL if provided
+  if (updates.image) {
+    try {
+      new URL(updates.image);
+    } catch (error) {
+      return res.status(400).json({ success: false, message: "Invalid image URL" });
+    }
+  }
+
   try {
     const updatedProduct = await Product.findByIdAndUpdate(id, updates, {
       new: true,
+      runValidators: true,
     });
 
     if (!updatedProduct) {
