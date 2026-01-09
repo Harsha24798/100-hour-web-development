@@ -9,6 +9,7 @@ import {
 import React from "react";
 import { useColorModeValue } from "@/components/ui/color-mode";
 import { useProductsStore } from "../store/product";
+import { toaster } from "@/components/ui/toaster";
 
 const CreatePage = () => {
   const [newProduct, setNewProduct] = React.useState({
@@ -21,8 +22,22 @@ const CreatePage = () => {
 
   const handleAddProduct = async () => {
     const { success, message } = await createProduct(newProduct);
-    console.log("Success", success);
-    console.log("Message", message);
+    if (!success) {
+      toaster.create({
+        title: "Error",
+        description: message,
+        type: "error",
+        duration: 5000,
+      });
+    } else {
+      toaster.create({
+        title: "Success",
+        description: message,
+        type: "success",
+        duration: 5000,
+      });
+      setNewProduct({ name: "", price: "", image: "" });
+    }
   };
 
   return (
