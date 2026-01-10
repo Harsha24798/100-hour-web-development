@@ -1,6 +1,7 @@
 import { generateToken } from "../lib/util.js";
 import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
+import cloudinary from "../lib/cloudinary.js";
 
 export const signup = async (req, res) => {
   const { fullName, email, password, profilePic } = req.body;
@@ -119,6 +120,13 @@ export const updateProfile = async (req, res) => {
       }
     }
 
+    // Upload image to Cloudinary if provided
+    let uploadedImageUrl;
+    if (profilePic) {
+      const uploadResponse = await cloudinary.uploader.upload(profilePic);
+      uploadedImageUrl = uploadResponse.secure_url;
+    }
+
     // If password is being changed, verify old password
     if (newPassword) {
       if (!oldPassword) {
@@ -149,7 +157,7 @@ export const updateProfile = async (req, res) => {
       const updatedUser = await User.findByIdAndUpdate(
         userId,
         {
-          profilePic: profilePic || req.user.profilePic,
+          profilePic: uploadedImageUrl || req.user.profilePic,
           fullName: fullName || req.user.fullName,
           email: email || req.user.email,
           password: hashedPassword,
@@ -164,7 +172,7 @@ export const updateProfile = async (req, res) => {
     const updatedUser = await User.findByIdAndUpdate(
       userId,
       {
-        profilePic: profilePic || req.user.profilePic,
+        profilePic: uploadedImageUrl || req.user.profilePic,
         fullName: fullName || req.user.fullName,
         email: email || req.user.email,
       },
