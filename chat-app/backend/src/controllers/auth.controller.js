@@ -2,7 +2,7 @@ import { generateToken } from "../lib/util.js";
 import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 
-export const signin = async (req, res) => {
+export const signup = async (req, res) => {
   const { fullName, email, password, profilePic } = req.body;
 
   try {
@@ -49,8 +49,8 @@ export const signin = async (req, res) => {
   }
 };
 
-export const signup = (req, res) => {
-  res.send("Signup controller");
+export const signin = (req, res) => {
+  res.send("Signin controller");
 };
 
 export const logout = (req, res) => {
