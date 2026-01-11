@@ -1,8 +1,24 @@
+import Navbar from "./components/Navbar";
+import { Route, Routes } from "react-router-dom";
+import HomePage from "./pages/HomePage";
+import LoginPage from "./pages/LoginPage";
+import SettingsPage from "./pages/SettingsPage";
+import ProfilePage from "./pages/ProfilePage";
+import SignUpPage from "./pages/SignUpPage";
+
 function App() {
   return (
     <>
       <div>
-        <h1 class="text-3xl font-bold underline bg-amber-300">Chat App</h1>
+        <Navbar />
+
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/signup" element={<SignUpPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
+        </Routes>
       </div>
     </>
   );
