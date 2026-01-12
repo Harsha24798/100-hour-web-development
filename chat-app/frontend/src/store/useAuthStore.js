@@ -1,8 +1,24 @@
-import { create } from 'zustand';
+import { create } from "zustand";
+import axiosInstance from "../lib/axios.js";
 
 export const useAuthStore = create((set) => ({
-  isAuthenticated: false,
-  user: null,
-  login: (userData) => set({ isAuthenticated: true, user: userData }),
-  logout: () => set({ isAuthenticated: false, user: null }),
+  authUser: null,
+  isSigingUp: false,
+  isLoggingIng: false,
+  isUpdatingProfile: false,
+
+  isCheckingAuth: true,
+
+  checkAuth: async () => {
+    try {
+      const res = await axiosInstance.get("/auth/check");
+
+      set({ authUser: res.data });
+    } catch (error) {
+      console.error("Error checking auth:", error);
+      set({ authUser: null });
+    } finally {
+      set({ isCheckingAuth: false });
+    }
+  },
 }));
