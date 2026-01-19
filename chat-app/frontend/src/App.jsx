@@ -17,6 +17,12 @@ function App() {
     checkAuth();
   }, [checkAuth]);
 
+  // Apply theme on app load
+  useEffect(() => {
+    const theme = localStorage.getItem("theme") || "light";
+    document.documentElement.setAttribute("data-theme", theme);
+  }, []);
+
   console.log(authUser);
 
   if (isCheckingAuth && !authUser)
